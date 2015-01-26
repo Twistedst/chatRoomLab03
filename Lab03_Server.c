@@ -3,9 +3,13 @@
 #include <stdio.h>
 #include <string.h>
 #include <sys/select.h>
-//
+#include <pthread.h>
+
+void *connection_handler(void *);
 
 int main(int argc, char **argv){
+
+	int socket_desc , new_socket , c , *new_sock;
   int sockfd=socket(AF_INET,SOCK_STREAM,0);
   fd_set sockets;
   FD_ZERO(&sockets);
@@ -28,8 +32,8 @@ int main(int argc, char **argv){
 
   //Accept incoming connection
   printf("Waiting for incoming connection...");
-  int len=sizeof(clientaddr);
-
+  int len=sizeof(clientaddr);  
+	
   while( (new_socket = accept(sockfd, (struct sockaddr *)&clientaddr, (socklen_t*)&len)) )
   {
 		printf("Connection accepted");
@@ -38,7 +42,7 @@ int main(int argc, char **argv){
 		new_sock = malloc(1);
 		*new_sock = new_socket;
 
-		if( pthread_create( &sniffer_thread , NULL , connection_handler , (void*) new_sock < 0)
+		if( pthread_create( &sniffer_thread , NULL , connection_handler , (void*) new_sock) < 0)
 		{
 				perror("could not create thread");
 				return 1;
@@ -80,21 +84,27 @@ int main(int argc, char **argv){
 	//Free socket pointer
 	free(socket_desc);
   }
-  FD_SET(sockfd,&sockets);
+  //FD_SET(sockfd,&sockets);
 
-  while(1){
+  while(1)
+{
     fd_set tmp_set = sockets;
     select(FD_SETSIZE,&tmp_set,NULL,NULL,NULL);
     int i;
-    for(i=0; i<FD_SETSIZE; i++){
-      if(FD_ISSET(i,&tmp_set)){
-	if(i==sockfd){
+    for(i=0; i<FD_SETSIZE; i++)
+	{
+      if(FD_ISSET(i,&tmp_set))\
+	{
+	if(i==sockfd)
+	{
 	  printf("A client connected\n");
 	  int clientsocket = accept(sockfd,
 				    (struct sockaddr*)&clientaddr,
 				    &len);
 	  FD_SET(clientsocket,&sockets);
+
 	} else {
+
 	  char line[5000];
 	  recv(i,line,5000,0);
 	  printf("Got from client: %s\n",line);
